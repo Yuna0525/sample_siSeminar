@@ -1,14 +1,100 @@
-name: comment
+name: Pylint Forced
 
 on:
-  workflow_run:
-    workflows:
-      - Sample actions
-    types: [completed]
+  # Trigger workflow on pull request, but only for PRs
+  # merging into staging
+  pull_request:
+    types: [ opened, synchronize, reopened ]
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: write
 
 jobs:
-  comment-failure:
-    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+  build:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: quipper/comment-failure-action@v0.1.1
+    - uses: actions/checkout@v2
+
+    - uses: technote-space/get-diff-action@v4
+      with:
+        PATTERNS: |
+          **/*.py
+          !**/migrations/*
+          !**/envs/*
+          !common/**/etree.py
+        DOT: '...'
+        DIFF_FILTER: 'AMRC'
+
+    - name: Set up Python 3.8
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.8
+
+    - name: Cache python requirements
+      uses: actions/cache@v2
+      id: cache-python-requirements
+      with:
+        path: /opt/hostedtoolcache/Python/
+        key: |
+            ${{ hashFiles('requirements.txt') }}
+      if: env.GIT_DIFF
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+      if: env.GIT_DIFF && steps.cache-python-requirements.outputs.cache-hit != 'true'
+
+    - name: Creating pylint report
+      id: pylint-report
+      continue-on-error: true
+      run: |
+        pylint ${{ env.GIT_DIFF }} 2>&1 | tee report_pylint.txt
+        
+        body=$(cat report_pylint.txt)
+        body="${body//'%'/'%25'}"
+        body="${body//$'\n'/'%0A'}"
+        body="${body//$'\r'/'%0D'}"
+        echo ::set-output name=icon::":x:"
+        [[ $body == *".py:"* || $body == *"***********"* ]] && title="**Please fix following pylint issues:**"
+        [[ ${body:5} == "-----"* ]] && score="Good Job, Pylint Score:" && echo ::set-output name=status::success \
+        && echo ::set-output name=icon::":white_check_mark:" && echo ::set-output name=value::10
+        echo ::set-output name=score::$score
+        echo ::set-output name=date::${{ steps.date.outputs.date }}
+        echo ::set-output name=title::$title
+        echo ::set-output name=body::$body
+      if: env.GIT_DIFF
+
+    - name: Post report on PR
+      uses: mshick/add-pr-comment@v1
+      with:
+        message: |
+          **pylint:** ${{ steps.pylint-report.outputs.icon }}
+          ${{ steps.pylint-report.outputs.title }}
+          ```
+          ${{ steps.pylint-report.outputs.score }}${{ steps.pylint-report.outputs.body }}
+          ```
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
+        repo-token-user-login: 'github-actions[bot]'
+      if: env.GIT_DIFF
+
+    - name: No py file, post comment on PR
+      uses: mshick/add-pr-comment@v1
+      with:
+        message: |
+            No python file in PR. **Looks good** :+1:
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
+        repo-token-user-login: 'github-actions[bot]'
+      if: env.GIT_DIFF == ''
+
+    - name: A/B Check
+
+      uses: actions/github-script@v3
+      with:
+        script: |
+          core.setFailed('boom!')
+      if: ${{ env.GIT_DIFF != '' && steps.pylint-report.outputs.value != 10 }}
