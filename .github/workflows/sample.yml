@@ -16,5 +16,5 @@ jobs:
         python-version: 3.x
     - run: pip install --upgrade pip
     - run: pip install pylint==v3.0.0a3
-    - run: pip3 install inspect==3.11.1
+    - run: pip3 install inspect
     - run: pylint --disable=all --enable=unused-import $(git ls-files '*.py')
