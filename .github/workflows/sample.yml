@@ -10,5 +10,6 @@ jobs:
     runs-on: ubuntu-latest # 実行環境の設定
 
     steps:
-      - uses: actions/checkout@master
-      - uses: cclauss/GitHub-Action-for-pylint@master
+    - uses: actions/checkout@master
+    - name: GitHub Action for pylint
+      uses: cclauss/GitHub-Action-for-pylint@master
