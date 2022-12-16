@@ -10,5 +10,5 @@ jobs:
     runs-on: ubuntu-latest # 実行環境の設定
 
     steps:
-      - uses: actions/checkout@v1
-      - uses: ricardochaves/python-lint@v1.4.0
+      - uses: actions/checkout@master
+      - uses: cclauss/GitHub-Action-for-pylint@master
