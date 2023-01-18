@@ -17,6 +17,7 @@ from pathlib import Path
 
 
 print('start!')
+
 if Path(sys.argv[1]).exists():  # 第一引数がファイルだったら
     for line in fileinput.input():  # ファイルの内容を一行ずつprint
         print('file input')
