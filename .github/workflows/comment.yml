@@ -56,6 +56,8 @@ jobs:
         echo ::set-output name=date::${{ steps.date.outputs.date }}
         echo ::set-output name=title::$title
         echo ::set-output name=body::$body
+
+        python prmsg.py report_pylint.txt
       if: env.GIT_DIFF
 
     - name: Post report on PR
