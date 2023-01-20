@@ -56,13 +56,12 @@ jobs:
         echo ::set-output name=date::${{ steps.date.outputs.date }}
         echo ::set-output name=title::$title
         echo ::set-output name=body::$body
-      if: env.GIT_DIFF
 
-    - name: Archive code coverage results
       uses: actions/upload-artifact@v3
       with:
         name: code-coverage-report
         path: .github/actions/report_pylint.txt
+      if: env.GIT_DIFF
 
     - name: Post report on PR
       uses: mshick/add-pr-comment@v1
