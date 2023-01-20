@@ -43,6 +43,7 @@ jobs:
       continue-on-error: true
       run: |
         pylint hello.py | tee report_pylint.txt
+        python prmsg.py report_pylint.txt
         
         body=$(cat report_pylint.txt)
         body="${body//'%'/'%25'}"
@@ -62,7 +63,7 @@ jobs:
       #   name: code-coverage-report
       #   path: .github/actions/report_pylint.txt
       # if: env.GIT_DIFF
-
+      
     - name: Post report on PR
       uses: mshick/add-pr-comment@v1
       with:
